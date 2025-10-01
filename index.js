@@ -17,7 +17,7 @@ const app = express();
 // ✅ Enable CORS only for frontend (port 3000)
 app.use(
 	cors({
-		origin: ["http://localhost:3000", 'https://solarx0.com'], // your React app
+		origin: ["http://localhost:3000", 'https://solarx0.com', 'https://www.solarx0.com',], // your React app
 		methods: ["GET", "POST", "PUT", "DELETE", 'PATCH'],
 		credentials: true, // if you use cookies/auth
 	})
