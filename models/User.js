@@ -26,9 +26,10 @@ const userSchema = new mongoose.Schema(
 				type: String,
 			},
 		],
+		referredBy: { type: String }, // ✅ stores the referral code of the upline
 		userStatus: {
 			type: String,
-			default : "active"
+			default: "active",
 		},
 
 		resetOtp: {

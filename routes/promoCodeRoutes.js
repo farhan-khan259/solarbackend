@@ -15,7 +15,7 @@ router.post("/promoCodeGetAll", getAllPromoCodes); // Get all promos
 router.post("/promoCodeDelete1", async (req, res) => {
 	try {
 		const { id } = req.body;
-		console.log( "ddd",id);
+		console.log("ddd", id);
 		const deleted = await PromoCode.findByIdAndDelete(id);
 
 		if (!deleted) {

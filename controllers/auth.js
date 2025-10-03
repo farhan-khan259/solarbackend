@@ -20,7 +20,7 @@ exports.signup = async (req, res) => {
 			}
 		}
 		// Create new user
-		const newUser = new User({ fullName, email, password, whatsappNumber });
+		const newUser = new User({ fullName, email, password, whatsappNumber, referredBy: refercode });
 		await newUser.save();
 		if (refercode) {
 			const refUser = await User.findOne({ randomCode: refercode });
@@ -164,8 +164,8 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
 	service: "gmail", // or "hotmail", "yahoo"
 	auth: {
-		user: process.env.EMAIL_USER || "fkhan14301@gmail.com", // set in .env
-		pass: process.env.EMAIL_PASS || "omustmkeriwryshz",
+		user: process.env.EMAIL_USER || "solarxofficial0@gmail.com", // set in .env
+		pass: process.env.EMAIL_PASS || "kjta vszx iiuq gdgc",
 	},
 });
 // ================= FORGET PASSWORD (SEND OTP) =================

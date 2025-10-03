@@ -5,7 +5,6 @@ const Payment = require("../models/payment");
 const Plan = require("../models/plain");
 const Announcements = require("../models/Announcements");
 
-// Admin Dashboard Statistics API
 router.get("/admin/dashboard-stats", async (req, res) => {
 	try {
 		const startOfToday = new Date();
@@ -257,7 +256,6 @@ router.get("/admin/report/monthly", async (req, res) => {
 			.json({ success: false, message: "Error fetching monthly report" });
 	}
 });
-
 router.get("/admin/report/daily", async (req, res) => {
 	try {
 		const today = new Date();
@@ -337,7 +335,6 @@ router.get("/admin/report/daily", async (req, res) => {
 		});
 	}
 });
-
 router.get("/admin/transactions", async (req, res) => {
 	try {
 		const transactions = await Payment.find();
@@ -377,7 +374,5 @@ router.get("/announcements", async (req, res) => {
 	}
 });
 
-// ✅ Today Report API
-// ✅ Daily Report API (with balance, bank name & user create date)
 
 module.exports = router;

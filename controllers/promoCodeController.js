@@ -2,33 +2,33 @@ const PromoCode = require("../models/PromoCode");
 const User = require("../models/User");
 
 function generateRandomCode() {
-	const prefix = "PRMO"; // fixed prefix
-	const number = Math.floor(100000000 + Math.random() * 900000000);
-	// generates a 9-digit number
-	return prefix + number;
+  const prefix = "PRMO"; // fixed prefix
+  const number = Math.floor(100000000 + Math.random() * 900000000);
+  // generates a 9-digit number
+  return prefix + number;
 }
 
 // ✅ Create a new promo code
 exports.createPromoCode = async (req, res) => {
-	try {
-		const { amount, limit } = req.body;
+  try {
+    const { amount, limit } = req.body;
 
-		const promo = new PromoCode({
-			code: generateRandomCode(),
-			amount,
-			limit,
-		});
+    const promo = new PromoCode({
+      code: generateRandomCode(),
+      amount,
+      limit,
+    });
 
-		await promo.save();
+    await promo.save();
 
-		res.status(201).json({
-			success: true,
-			message: "Promo code created successfully",
-			data: promo,
-		});
-	} catch (error) {
-		res.status(500).json({ success: false, message: error.message });
-	}
+    res.status(201).json({
+      success: true,
+      message: "Promo code created successfully",
+      data: promo,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 // ✅ Apply promo code
@@ -89,12 +89,12 @@ exports.applyPromoCode = async (req, res) => {
 // ✅ Get all promo codes
 exports.getAllPromoCodes = async (req, res) => {
 
-	try {
-		const promos = await PromoCode.find().sort({ createdAt: -1 });
-		res.status(200).json({ success: true, data: promos });
-	} catch (error) {
-		res.status(500).json({ success: false, message: error.message });
-	}
+  try {
+    const promos = await PromoCode.find().sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: promos });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 // ✅ Delete promo code

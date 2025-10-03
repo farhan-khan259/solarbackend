@@ -65,7 +65,7 @@ router.post("/usertransaction", async (req, res) => {
 router.delete("/delete", deleteUser);
 router.post("/account", upload.single("profilepicture"), async (req, res) => {
 	try {
-		const { userId, email, whatsappNumber, fullname } = req.body;
+		const { userId, email, whatsappNumber, fullName } = req.body;
 
 		if (!userId) {
 			return res
@@ -97,7 +97,7 @@ router.post("/account", upload.single("profilepicture"), async (req, res) => {
 			user.profilepicture = `/uploads/${req.file.filename}`;
 		}
 		if (whatsappNumber) user.whatsappNumber = whatsappNumber;
-		if (fullname) user.fullname = fullname;
+		if (fullName) user.fullName = fullName;
 
 		await user.save();
 

@@ -1,6 +1,6 @@
 const Announcement = require("../models/Announcements");
 
-// Create a new announcement
+// Create a new announcement (auto 24h expiry)
 exports.createAnnouncement = async (req, res) => {
 	try {
 		const { message } = req.body;
@@ -12,12 +12,19 @@ exports.createAnnouncement = async (req, res) => {
 			});
 		}
 
-		const announcement = new Announcement({ message });
+		// Expire after 24 hours
+		const expireAt = new Date(Date.now() + 60 * 60 * 24 * 1000);
+
+		const announcement = new Announcement({
+			message,
+			expireAt,
+		});
+
 		await announcement.save();
 
 		res.status(201).json({
 			success: true,
-			message: "Announcement created successfully",
+			message: "Announcement created successfully (auto deletes in 24h)",
 			data: announcement,
 		});
 	} catch (error) {
@@ -28,9 +35,15 @@ exports.createAnnouncement = async (req, res) => {
 		});
 	}
 };
+
+// Get active announcements only
 exports.getAnnouncements = async (req, res) => {
 	try {
-		const announcements = await Announcement.find().sort({ createdAt: -1 });
+		const now = new Date();
+
+		const announcements = await Announcement.find({
+			expireAt: { $gt: now },
+		}).sort({ createdAt: -1 });
 
 		res.status(200).json({
 			success: true,
