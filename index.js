@@ -1,10 +1,11 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const cors = require("cors"); // ✅ Import CORS
+const cors = require("cors");
 const authRoutes = require("./routes/user");
-const paymnetRoues = require("./routes/payment");
-const bindRoues = require("./routes/bindAccountRoutes");
-const teamdeatilsRoutes = require("./routes/Teamdetails");
+const paymentRoutes = require("./routes/payment");
+const claimRewardRoutes = require("./routes/claimReward");
+const bindRoutes = require("./routes/bindAccountRoutes");
+const teamDetailsRoutes = require("./routes/Teamdetails");
 const planRoutes = require("./routes/plain");
 const promoCodeRoutes = require("./routes/promoCodeRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -38,10 +39,11 @@ mongoose
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", authRoutes);
 app.use("/api", userHistory);
-app.use("/team", teamdeatilsRoutes);
+app.use("/api", claimRewardRoutes);
+app.use("/team", teamDetailsRoutes);
 app.use("/api/plans", planRoutes);
-app.use("/api", paymnetRoues);
-app.use("/api/bindAccountRoutes", bindRoues);
+app.use("/api", paymentRoutes);
+app.use("/api/bindAccountRoutes", bindRoutes);
 app.use("/api", promoCodeRoutes);
 app.use("/api", adminRoutes);
 app.use("/api", announcementRoutes);
