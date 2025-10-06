@@ -35,7 +35,7 @@ mongoose
 	.then(() => console.log("✅ MongoDB connected"))
 	.catch((err) => console.error(err));
 
-// ✅ Routes
+// Routes
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", authRoutes);
 app.use("/api", userHistory);
@@ -47,12 +47,19 @@ app.use("/api/bindAccountRoutes", bindRoutes);
 app.use("/api", promoCodeRoutes);
 app.use("/api", adminRoutes);
 app.use("/api", announcementRoutes);
+
 require("./cron/planCron");
-// ✅ Example route
+
+// Test route
 app.get("/", (req, res) => {
-	console.log("connected");
+	console.log("Server connected");
 	res.send("Hello, Mongo + Express!");
 });
 
-// ✅ Start server
+// Test claim reward route
+app.get("/api/test-claim", (req, res) => {
+	res.json({ message: "Claim reward route is working!" });
+});
+
+// Start server
 app.listen(3005, () => console.log("🚀 Server started on port 3005"));
