@@ -241,7 +241,6 @@
 // };
 
 
-
 require("dotenv").config();
 const User = require("../models/User");
 const Plan = require("../models/plain");
@@ -251,7 +250,7 @@ const nodemailer = require("nodemailer");
 
 // ================== 🔐 ADMIN CREDENTIALS (SECURELY FROM .ENV) ==================
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // ✅ CHANGED TO HASH
 
 // ================== 📧 EMAIL TRANSPORTER ==================
 const transporter = nodemailer.createTransport({
@@ -317,19 +316,26 @@ exports.login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
 
-		// ✅ Check if it’s admin login
-		if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-			const token = jwt.sign({ role: "admin", email }, process.env.JWT_SECRET, {
-				expiresIn: "1d",
-			});
+		// ✅ SECURE: Check if it's admin login using bcrypt.compare
+		if (email === ADMIN_EMAIL) {
+			const isAdminPasswordValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
 
-			return res.status(200).json({
-				success: true,
-				message: "Admin login successful",
-				user: { email: ADMIN_EMAIL, role: "admin" },
-				token,
-				userPlanlength: 0,
-			});
+			if (isAdminPasswordValid) {
+				const token = jwt.sign(
+					{ role: "admin", email },
+					process.env.JWT_SECRET,
+					{ expiresIn: "1d" }
+				);
+
+				return res.status(200).json({
+					success: true,
+					message: "Admin login successful",
+					user: { email: ADMIN_EMAIL, role: "admin" },
+					token,
+					userPlanlength: 0,
+				});
+			}
+			// If admin email but wrong password, continue to user login
 		}
 
 		// ✅ Regular user login
@@ -445,4 +451,3 @@ exports.resetPassword = async (req, res) => {
 		res.status(500).json({ success: false, message: err.message });
 	}
 };
-
