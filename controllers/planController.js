@@ -54,25 +54,26 @@ const User = require("../models/User");
 
 exports.createPlan = async (req, res) => {
 	try {
-		// Allow both userId and user_id for flexibility
-		const { user_id, userId, PlanName, Investment, dailyEarning, durationDays } = req.body;
-		const finalUserId = user_id || userId;
+		const { user_id, PlanName, Investment, dailyEarning, durationDays } = req.body;
 
-		// 🧩 Basic validation
-		if (!finalUserId || !PlanName || !Investment || !dailyEarning) {
+		// Validate fields
+		if (!user_id || !PlanName || !Investment || !dailyEarning) {
 			return res.status(400).json({
 				success: false,
-				message: "All fields are required (userId, PlanName, Investment, dailyEarning)",
+				message: "All fields are required",
 			});
 		}
 
-		// 🧠 Fetch user
-		const user = await User.findById(finalUserId);
+		// Find user
+		const user = await User.findById(user_id);
 		if (!user) {
-			return res.status(404).json({ success: false, message: "User not found" });
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
 		}
 
-		// 💰 Check balance
+		// Check balance
 		if (user.userbalance < Investment) {
 			return res.status(400).json({
 				success: false,
@@ -80,15 +81,20 @@ exports.createPlan = async (req, res) => {
 			});
 		}
 
-		// ⏳ Calculate expiry
-		const days = durationDays || 60;
-		const expiryDate = new Date();
-		expiryDate.setDate(expiryDate.getDate() + days);
-		const planExpireText = `${days} days`;
+		// Set lifetime plan (no expiry)
+		const days = durationDays || null; // no expiry if not provided
+		let expiryDate = null;
+		let planExpireText = "Lifetime";
 
-		// 🪙 Create new plan
-		const newPlan = new Plan({
-			userId: finalUserId,
+		if (days) {
+			expiryDate = new Date();
+			expiryDate.setDate(expiryDate.getDate() + days);
+			planExpireText = `${days} days`;
+		}
+
+		// Create plan
+		const plan = new Plan({
+			user_id,
 			PlanName,
 			Investment,
 			dailyEarning,
@@ -97,30 +103,29 @@ exports.createPlan = async (req, res) => {
 			planExpireText,
 			expiryDate,
 			planExpired: false,
-			createdAt: new Date(),
 		});
 
-		// 🔁 Update user investment + balance
+		// Deduct investment from user balance
 		user.UserInvestment = (user.UserInvestment || 0) + Investment;
 		user.userbalance -= Investment;
 
-		await Promise.all([user.save(), newPlan.save()]);
+		await user.save();
+		await plan.save();
 
-		return res.status(201).json({
+		res.status(201).json({
 			success: true,
-			message: "Plan subscribed successfully!",
-			plan: newPlan,
-			updatedBalance: user.userbalance,
+			message: "Plan created successfully!",
+			plan,
 		});
 	} catch (err) {
-		console.error("❌ Error creating plan:", err);
-		return res.status(500).json({
+		console.error("❌ Error in createPlan:", err);
+		res.status(500).json({
 			success: false,
-			message: "Server error while creating plan",
-			error: err.message,
+			message: err.message || "Something went wrong while creating the plan",
 		});
 	}
 };
+
 
 // ✅ Get all active plans of the logged-in user
 // exports.getPlans = async (req, res) => {
@@ -143,37 +148,41 @@ exports.getPlans = async (req, res) => {
 	try {
 		const { id } = req.query;
 
-		if (!id) {
-			return res.status(400).json({
-				success: false,
-				message: "User ID is required in query (?id=USER_ID)",
+		let query = {};
+
+		// If user ID is passed, filter by user
+		if (id) {
+			query.user_id = id;
+		}
+
+		// Exclude expired plans if any (for safety)
+		query.planExpired = false;
+
+		// Fetch plans
+		const plans = await Plan.find(query).sort({ createdAt: -1 });
+
+		if (!plans.length) {
+			return res.status(200).json({
+				success: true,
+				message: "No active plans found for this user.",
+				plans: [],
 			});
 		}
 
-		// ✅ Check if user exists first
-		const userExists = await User.findById(id);
-		if (!userExists) {
-			return res.status(404).json({ success: false, message: "User not found" });
-		}
-
-		// ✅ Fetch user's active plans
-		const plans = await Plan.find({ userId: id });
-
-		// ✅ If no plans found, return empty array (not error)
-		if (!plans.length) {
-			return res.json({ success: true, plans: [] });
-		}
-
-		return res.json({ success: true, plans });
+		res.status(200).json({
+			success: true,
+			count: plans.length,
+			plans,
+		});
 	} catch (err) {
 		console.error("❌ Error fetching plans:", err);
-		return res.status(500).json({
+		res.status(500).json({
 			success: false,
-			message: "Server error while fetching plans",
-			error: err.message,
+			message: err.message || "Failed to fetch plans.",
 		});
 	}
 };
+
 
 // ✅ Get all plans for a specific user (can include expired plans if needed)
 exports.getPlanById = async (req, res) => {
