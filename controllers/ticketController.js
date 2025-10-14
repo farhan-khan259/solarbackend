@@ -214,8 +214,6 @@
 // };
 
 
-
-const mongoose = require("mongoose");
 const Ticket = require("../models/Ticket");
 const User = require("../models/User");
 
@@ -233,13 +231,14 @@ async function generateUniqueTicketNumber() {
 // 🔹 Generate random 20 numbers (6-digit each)
 exports.getRandomTickets = async (req, res) => {
     try {
-        const tickets = Array.from({ length: 20 }, () =>
-            Math.floor(100000 + Math.random() * 900000).toString()
-        );
-        return res.status(200).json({ tickets });
+        const tickets = [];
+        for (let i = 0; i < 20; i++) {
+            tickets.push(Math.floor(100000 + Math.random() * 900000).toString());
+        }
+        res.json({ tickets });
     } catch (error) {
-        console.error("❌ Error generating tickets:", error);
-        return res.status(500).json({ message: "Error generating tickets" });
+        console.error(error);
+        res.status(500).json({ message: "Error generating tickets" });
     }
 };
 
@@ -247,19 +246,23 @@ exports.getRandomTickets = async (req, res) => {
 exports.buyTicket = async (req, res) => {
     try {
         const { userId, ticketNumber } = req.body;
+
         if (!userId || !ticketNumber)
             return res.status(400).json({ message: "Missing details" });
 
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
 
+        // ✅ Check balance correctly
         if (user.userbalance < 500)
             return res.status(400).json({ message: "Insufficient balance" });
 
+        // Check if ticket already exists
         const existing = await Ticket.findOne({ ticketNumber });
         if (existing)
             return res.status(400).json({ message: "Ticket already purchased" });
 
+        // Deduct balance & save ticket
         user.userbalance -= 500;
         await user.save();
 
@@ -267,7 +270,6 @@ exports.buyTicket = async (req, res) => {
             userId: user._id,
             ticketNumber,
             price: 500,
-            status: "pending",
         });
 
         return res.status(200).json({
@@ -277,20 +279,21 @@ exports.buyTicket = async (req, res) => {
             userbalance: user.userbalance,
         });
     } catch (error) {
-        console.error("❌ Error buying ticket:", error);
-        return res.status(500).json({ message: "Error buying ticket" });
+        console.error(error);
+        res.status(500).json({ message: "Error buying ticket" });
     }
 };
+
 
 // 🔹 Get user’s bought tickets
 exports.getUserTickets = async (req, res) => {
     try {
         const { userId } = req.params;
         const tickets = await Ticket.find({ userId }).sort({ createdAt: -1 });
-        return res.status(200).json({ tickets });
+        res.json({ tickets });
     } catch (error) {
-        console.error("❌ Error fetching user tickets:", error);
-        return res.status(500).json({ message: "Error fetching user tickets" });
+        console.error(error);
+        res.status(500).json({ message: "Error fetching user tickets" });
     }
 };
 
@@ -310,12 +313,14 @@ exports.getTicketHistory = async (req, res) => {
             boughtOn: t.createdAt.toISOString().split("T")[0],
         }));
 
-        return res.status(200).json({ history });
+        res.json({ history });
     } catch (error) {
-        console.error("❌ Error fetching history:", error);
-        return res.status(500).json({ message: "Error fetching history" });
+        console.error(error);
+        res.status(500).json({ message: "Error fetching history" });
     }
 };
+
+
 
 // 🔹 ADMIN: Get all tickets (with user info)
 exports.getAllTickets = async (req, res) => {
@@ -323,10 +328,11 @@ exports.getAllTickets = async (req, res) => {
         const tickets = await Ticket.find()
             .populate("userId", "fullName email whatsappNumber")
             .sort({ createdAt: -1 });
-        return res.status(200).json({ tickets });
+
+        res.json({ tickets });
     } catch (error) {
-        console.error("❌ Error fetching all tickets:", error);
-        return res.status(500).json({ message: "Error fetching all tickets" });
+        console.error(error);
+        res.status(500).json({ message: "Error fetching all tickets" });
     }
 };
 
@@ -334,91 +340,89 @@ exports.getAllTickets = async (req, res) => {
 exports.runManualDraw = async (req, res) => {
     try {
         const pendingTickets = await Ticket.find({ status: "pending" });
-        if (pendingTickets.length === 0)
-            return res.status(200).json({ message: "No pending tickets to draw." });
 
+        if (pendingTickets.length === 0) {
+            return res.json({ message: "No pending tickets to draw." });
+        }
+
+        // Pick random winner
         const winner =
             pendingTickets[Math.floor(Math.random() * pendingTickets.length)];
 
+        // Update all tickets
         for (const ticket of pendingTickets) {
-            ticket.status =
-                ticket.ticketNumber === winner.ticketNumber ? "win" : "lose";
+            ticket.status = ticket.ticketNumber === winner.ticketNumber ? "won" : "lost";
             ticket.drawDate = new Date();
             await ticket.save();
         }
 
+        // Reward winner
         const reward = 10000;
         const winnerUser = await User.findById(winner.userId);
-        if (winnerUser) {
-            winnerUser.userbalance += reward;
-            await winnerUser.save();
-        }
+        winnerUser.userbalance += reward;
+        await winnerUser.save();
 
-        return res.status(200).json({
-            success: true,
+        res.json({
             message: "Draw completed successfully",
             winner: {
                 ticketNumber: winner.ticketNumber,
-                user: winnerUser?.fullName || "Unknown",
+                user: winnerUser.fullName,
                 reward,
             },
         });
     } catch (error) {
-        console.error("❌ Error running manual draw:", error);
-        return res.status(500).json({ message: "Error running manual draw" });
+        console.error(error);
+        res.status(500).json({ message: "Error running manual draw" });
     }
 };
 
-// 🔹 ADMIN: Approve a ticket (mark as win)
+
+// // 🔹 ADMIN: Approve a ticket (mark as Win)
+
+
 exports.approveTicket = async (req, res) => {
     try {
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id))
-            return res.status(400).json({ message: "Invalid Ticket ID" });
 
         const ticket = await Ticket.findById(id);
-        if (!ticket)
+        if (!ticket) {
             return res.status(404).json({ message: "Ticket not found" });
+        }
 
-        ticket.status = "win";
+        // ✅ Make sure status matches your schema enum
+        ticket.status = "Win"; // Use "Win" instead of "won"
         ticket.drawDate = new Date();
+
         await ticket.save();
 
-        return res.status(200).json({
-            success: true,
-            message: "Ticket approved successfully!",
-        });
+        res.json({ success: true, message: "Ticket approved successfully!" });
     } catch (error) {
-        console.error("❌ Error approving ticket:", error);
-        return res.status(500).json({
+        console.error("❌ Error approving ticket:", error.message, error.stack);
+        res.status(500).json({
             message: "Error approving ticket",
             error: error.message,
         });
     }
 };
 
-// 🔹 ADMIN: Reject a ticket (mark as lose)
 exports.rejectTicket = async (req, res) => {
     try {
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id))
-            return res.status(400).json({ message: "Invalid Ticket ID" });
 
         const ticket = await Ticket.findById(id);
-        if (!ticket)
+        if (!ticket) {
             return res.status(404).json({ message: "Ticket not found" });
+        }
 
-        ticket.status = "lose";
+        ticket.status = "Lose"; // Use "Lose" (matches schema)
         ticket.drawDate = new Date();
+
         await ticket.save();
 
-        return res.status(200).json({
-            success: true,
-            message: "Ticket rejected successfully!",
-        });
+        res.json({ success: true, message: "Ticket rejected successfully!" });
     } catch (error) {
-        console.error("❌ Error rejecting ticket:", error);
-        return res.status(500).json({
+        console.error("❌ Error rejecting ticket:", error.message, error.stack);
+        res.status(500).json({
             message: "Error rejecting ticket",
             error: error.message,
         });
