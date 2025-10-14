@@ -141,21 +141,39 @@ exports.createPlan = async (req, res) => {
 
 exports.getPlans = async (req, res) => {
 	try {
-		const userId = req.query.id; // from frontend: /api/plans/?id=USER_ID
-		if (!userId) {
-			return res.status(400).json({ success: false, message: "User ID is required" });
+		const { id } = req.query;
+
+		if (!id) {
+			return res.status(400).json({
+				success: false,
+				message: "User ID is required in query (?id=USER_ID)",
+			});
 		}
 
-		// Find only plans that belong to this user
-		const plans = await Plan.find({ userId: userId.toString() });
+		// ✅ Check if user exists first
+		const userExists = await User.findById(id);
+		if (!userExists) {
+			return res.status(404).json({ success: false, message: "User not found" });
+		}
 
-		res.status(200).json({ success: true, plans });
-	} catch (error) {
-		console.error("❌ Error fetching plan:", error);
-		res.status(500).json({ success: false, message: "Server error while fetching plans" });
+		// ✅ Fetch user's active plans
+		const plans = await Plan.find({ userId: id });
+
+		// ✅ If no plans found, return empty array (not error)
+		if (!plans.length) {
+			return res.json({ success: true, plans: [] });
+		}
+
+		return res.json({ success: true, plans });
+	} catch (err) {
+		console.error("❌ Error fetching plans:", err);
+		return res.status(500).json({
+			success: false,
+			message: "Server error while fetching plans",
+			error: err.message,
+		});
 	}
 };
-
 
 // ✅ Get all plans for a specific user (can include expired plans if needed)
 exports.getPlanById = async (req, res) => {
