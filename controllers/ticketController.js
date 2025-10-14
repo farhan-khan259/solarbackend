@@ -70,16 +70,33 @@ exports.buyTicket = async (req, res) => {
 
 
 // 🔹 Get user’s bought tickets
+// exports.getUserTickets = async (req, res) => {
+//     try {
+//         const { userId } = req.params;
+//         const tickets = await Ticket.find({ userId }).sort({ createdAt: -1 });
+//         res.json({ tickets });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: "Error fetching user tickets" });
+//     }
+// };
+
+
 exports.getUserTickets = async (req, res) => {
     try {
-        const { userId } = req.params;
-        const tickets = await Ticket.find({ userId }).sort({ createdAt: -1 });
-        res.json({ tickets });
+        const userId = req.query.userId || req.params.userId;
+        if (!userId) {
+            return res.status(400).json({ success: false, message: "User ID is required" });
+        }
+
+        const tickets = await Ticket.find({ userId: userId.toString() });
+        res.status(200).json({ success: true, tickets });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error fetching user tickets" });
+        console.error("Error fetching user tickets:", error);
+        res.status(500).json({ success: false, message: "Server error fetching tickets" });
     }
 };
+
 
 // 🔹 Ticket history
 exports.getTicketHistory = async (req, res) => {
