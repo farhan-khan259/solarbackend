@@ -3,11 +3,7 @@ import User from "../models/User.js"; // <-- adjust path if needed
 
 const router = express.Router();
 
-/**
- * POST /api/updatebalance
- * Body: { userId: string, amount: number }
- * Example: { "userId": "652c8f...", "amount": -500 }
- */
+
 router.post("/updatebalance", async (req, res) => {
     try {
         const { userId, amount } = req.body;

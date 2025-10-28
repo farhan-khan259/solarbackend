@@ -115,9 +115,9 @@ router.post("/usertransaction", async (req, res) => {
 		}
 
 		// ✅ Calculate stats
-		const directStats = await calculateStats(directReferrals, 0.08);
-		const indirectStats = await calculateStats(indirectReferrals, 0.03);
-		const extendedStats = await calculateStats(extendedReferrals, 0.02);
+		const directStats = await calculateStats(directReferrals, 0.06);
+		const indirectStats = await calculateStats(indirectReferrals, 0.031);
+		const extendedStats = await calculateStats(extendedReferrals, 0.015);
 
 		// ✅ Commission totals
 		const directTotalCommission = directStats.totalCommission;

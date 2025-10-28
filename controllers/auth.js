@@ -1,246 +1,3 @@
-// const User = require("../models/User");
-// const Plan = require("../models/plain");
-// const jwt = require("jsonwebtoken");
-// // ✅ Signup Controller
-// exports.signup = async (req, res) => {
-// 	console.log(req.body);
-// 	try {
-// 		const { fullName, email, password, refercode, whatsappNumber } = req.body;
-// 		console.log(refercode);
-// 		// Check if user already exists
-// 		const existingUser = await User.findOne({ email });
-// 		if (existingUser) {
-// 			return res.status(400).json({ message: "Email already registered" });
-// 		}
-// 		if (refercode) {
-// 			userAvb = await User.findOne({ randomCode: refercode });
-
-// 			if (!userAvb) {
-// 				return res.status(400).json({ message: "Invalid Referral Code" });
-// 			}
-// 		}
-// 		// Create new user
-// 		const newUser = new User({ fullName, email, password, whatsappNumber, referredBy: refercode });
-// 		await newUser.save();
-// 		if (refercode) {
-// 			const refUser = await User.findOne({ randomCode: refercode });
-// 			if (refUser) {
-// 				refUser.team.push(newUser.randomCode);
-// 				await refUser.save();
-// 			}
-// 		}
-
-// 		res.status(201).json({
-// 			message: "User registered successfully",
-// 			user: newUser,
-// 			userPlanlength: 0,
-// 		});
-// 	} catch (err) {
-// 		res.status(500).json({ error: err.message });
-// 	}
-// };
-// exports.login = async (req, res) => {
-// 	try {
-// 		const { email, password } = req.body;
-
-// 		// find user
-// 		console.log(email, password);
-// 		const user = await User.findOne({ email });
-// 		if (!user) {
-// 			return res
-// 				.status(404)
-// 				.json({ success: false, message: "User not found" });
-// 		}
-
-// 		// check password
-// 		const isMatch = password === user.password;
-// 		if (!isMatch) {
-// 			return res
-// 				.status(400)
-// 				.json({ success: false, message: "Invalid credentials" });
-// 		}
-
-// 		// create token
-// 		const token = jwt.sign({ id: user._id }, "your_jwt_secret", {
-// 			expiresIn: "1d",
-// 		});
-// 		const plans = await Plan.find({ user_id: user._id });
-// 		const planCount = plans.length; //
-
-// 		res
-// 			.status(200)
-// 			.json({ success: true, token, user, userPlanlength: planCount || 0 });
-// 	} catch (err) {
-// 		res.status(500).json({ success: false, message: err.message });
-// 	}
-// };
-// exports.getAllUsers = async (req, res) => {
-// 	try {
-// 		// Find all users and exclude the password field for security
-// 		const users = await User.find();
-// 		res.status(200).json({
-// 			success: true,
-// 			users: users,
-// 			count: users.length,
-// 		});
-// 	} catch (err) {
-// 		res.status(500).json({
-// 			success: false,
-// 			message: err.message,
-// 		});
-// 	}
-// };
-
-// exports.deleteUser = async (req, res) => {
-// 	console.log("Received userId:", req.body.userId);
-
-// 	try {
-// 		const userId = req.body.userId;
-
-// 		if (!userId) {
-// 			return res.status(400).json({
-// 				success: false,
-// 				message: "User ID is required",
-// 			});
-// 		}
-
-// 		const result = await User.findByIdAndDelete(userId);
-
-// 		if (!result) {
-// 			return res.status(404).json({
-// 				success: false,
-// 				message: "User not found",
-// 			});
-// 		}
-
-// 		res.status(200).json({
-// 			success: true,
-// 			message: "User deleted successfully",
-// 			user: result,
-// 		});
-// 	} catch (err) {
-// 		res.status(500).json({
-// 			success: false,
-// 			message: err.message,
-// 		});
-// 	}
-// };
-
-// // ================= FORGET PASSWORD (SEND OTP) =================
-// exports.forgetPassword = async (req, res) => {
-// 	try {
-// 		const { email } = req.body;
-
-// 		const user = await User.findOne({ email });
-// 		if (!user) {
-// 			return res
-// 				.status(404)
-// 				.json({ success: false, message: "User not found" });
-// 		}
-
-// 		// Generate OTP (5 digits to match frontend)
-// 		const otp = Math.floor(10000 + Math.random() * 90000).toString();
-
-// 		// Save OTP and expiry (5 mins)
-// 		user.resetOtp = otp;
-// 		user.resetOtpExpire = Date.now() + 5 * 60 * 1000;
-// 		await user.save();
-
-// 		// Send OTP via email
-// 		await transporter.sendMail({
-// 			from: "yourEmail@gmail.com",
-// 			to: email,
-// 			subject: "Password Reset OTP",
-// 			text: `Your OTP for password reset is ${otp}. It will expire in 5 minutes.`,
-// 		});
-
-// 		res.json({ success: true, message: "OTP sent to email" });
-// 	} catch (err) {
-// 		res.status(500).json({ success: false, message: err.message });
-// 	}
-// };
-// const nodemailer = require("nodemailer");
-
-// const transporter = nodemailer.createTransport({
-// 	service: "gmail", // or "hotmail", "yahoo"
-// 	auth: {
-// 		user: process.env.EMAIL_USER || "solarxofficial0@gmail.com", // set in .env
-// 		pass: process.env.EMAIL_PASS || "kjta vszx iiuq gdgc",
-// 	},
-// });
-// // ================= FORGET PASSWORD (SEND OTP) =================
-// exports.forgetPassword = async (req, res) => {
-// 	try {
-// 		const { email } = req.body;
-
-// 		const user = await User.findOne({ email });
-// 		if (!user) {
-// 			return res
-// 				.status(404)
-// 				.json({ success: false, message: "User not found" });
-// 		}
-
-// 		// Generate OTP (5 digits to match frontend)
-// 		const otp = Math.floor(10000 + Math.random() * 90000).toString();
-// 		console.log(otp);
-
-// 		// Save OTP and expiry (5 mins)
-// 		user.resetOtp = otp;
-// 		user.resetOtpExpire = Date.now() + 5 * 60 * 1000;
-// 		await user.save();
-
-// 		// Send OTP via email
-// 		await transporter.sendMail({
-// 			from: "yourEmail@gmail.com",
-// 			to: email,
-// 			subject: "Password Reset OTP",
-// 			text: `Your OTP for password reset is ${otp}. It will expire in 5 minutes.`,
-// 		});
-
-// 		res.json({ success: true, message: "OTP sent to email" });
-// 	} catch (err) {
-// 		res.status(500).json({ success: false, message: err.message });
-// 	}
-// };
-
-// // ================= VERIFY OTP & RESET PASSWORD =================
-// exports.resetPassword = async (req, res) => {
-// 	try {
-// 		const { email, resetcode, password, confirmpassword } = req.body;
-
-// 		if (password !== confirmpassword) {
-// 			return res
-// 				.status(400)
-// 				.json({ success: false, message: "Passwords do not match" });
-// 		}
-
-// 		const user = await User.findOne({ email });
-// 		if (!user) {
-// 			return res
-// 				.status(404)
-// 				.json({ success: false, message: "User not found" });
-// 		}
-
-// 		// Check OTP validity
-// 		if (user.resetOtp !== resetcode || user.resetOtpExpire < Date.now()) {
-// 			return res
-// 				.status(400)
-// 				.json({ success: false, message: "Invalid or expired OTP" });
-// 		}
-
-// 		// Update password
-// 		user.password = password;
-// 		user.resetOtp = undefined;
-// 		user.resetOtpExpire = undefined;
-// 		await user.save();
-
-// 		res.json({ success: true, message: "Password reset successfully" });
-// 	} catch (err) {
-// 		res.status(500).json({ success: false, message: err.message });
-// 	}
-// };
-
-
 require("dotenv").config();
 const User = require("../models/User");
 const Plan = require("../models/plain");
@@ -262,6 +19,109 @@ const transporter = nodemailer.createTransport({
 });
 
 // ================== 🧾 SIGNUP ==================
+// exports.signup = async (req, res) => {
+// 	try {
+// 		const { fullName, email, password, refercode, whatsappNumber } = req.body;
+
+// 		// Check for existing user
+// 		const existingUser = await User.findOne({ email });
+// 		if (existingUser) {
+// 			return res.status(400).json({ message: "Email already registered" });
+// 		}
+
+// 		// Referral check
+// 		if (refercode) {
+// 			const refUser = await User.findOne({ randomCode: refercode });
+// 			if (!refUser) {
+// 				return res.status(400).json({ message: "Invalid referral code" });
+// 			}
+// 		}
+
+// 		// Hash password before saving
+// 		const hashedPassword = await bcrypt.hash(password, 10);
+
+// 		const newUser = new User({
+// 			fullName,
+// 			email,
+// 			password: hashedPassword,
+// 			whatsappNumber,
+// 			referredBy: refercode,
+// 		});
+// 		await newUser.save();
+
+// 		// Add referral link
+// 		if (refercode) {
+// 			const refUser = await User.findOne({ randomCode: refercode });
+// 			if (refUser) {
+// 				refUser.team.push(newUser.randomCode);
+// 				await refUser.save();
+// 			}
+// 		}
+
+// 		res.status(201).json({
+// 			message: "User registered successfully",
+// 			user: newUser,
+// 			userPlanlength: 0,
+// 		});
+// 	} catch (err) {
+// 		res.status(500).json({ message: err.message });
+// 	}
+// };
+
+
+// exports.signup = async (req, res) => {
+// 	try {
+// 		const { fullName, email, password, refercode, whatsappNumber } = req.body;
+
+// 		// Check for existing user
+// 		const existingUser = await User.findOne({ email });
+// 		if (existingUser) {
+// 			return res.status(400).json({ message: "Email already registered" });
+// 		}
+
+// 		// ✅ MANDATORY Referral check
+// 		if (!refercode) {
+// 			return res.status(400).json({ message: "Referral code is required" });
+// 		}
+
+// 		// Validate referral code
+// 		const refUser = await User.findOne({ randomCode: refercode });
+// 		if (!refUser) {
+// 			return res.status(400).json({ message: "Invalid referral code" });
+// 		}
+
+// 		// Hash password before saving
+// 		const hashedPassword = await bcrypt.hash(password, 10);
+
+// 		const newUser = new User({
+// 			fullName,
+// 			email,
+// 			password: hashedPassword,
+// 			whatsappNumber,
+// 			referredBy: refercode,
+// 		});
+// 		await newUser.save();
+
+// 		// Add referral link
+// 		if (refercode) {
+// 			const refUser = await User.findOne({ randomCode: refercode });
+// 			if (refUser) {
+// 				refUser.team.push(newUser.randomCode);
+// 				await refUser.save();
+// 			}
+// 		}
+
+// 		res.status(201).json({
+// 			message: "User registered successfully",
+// 			user: newUser,
+// 			userPlanlength: 0,
+// 		});
+// 	} catch (err) {
+// 		res.status(500).json({ message: err.message });
+// 	}
+// };
+
+
 exports.signup = async (req, res) => {
 	try {
 		const { fullName, email, password, refercode, whatsappNumber } = req.body;
@@ -269,18 +129,36 @@ exports.signup = async (req, res) => {
 		// Check for existing user
 		const existingUser = await User.findOne({ email });
 		if (existingUser) {
-			return res.status(400).json({ message: "Email already registered" });
+			return res.status(400).json({
+				success: false,
+				message: "Email already registered"
+			});
 		}
 
-		// Referral check
-		if (refercode) {
-			const refUser = await User.findOne({ randomCode: refercode });
-			if (!refUser) {
-				return res.status(400).json({ message: "Invalid referral code" });
+		// Get total user count
+		const userCount = await User.countDocuments();
+		const isFirstUser = userCount === 0;
+
+		// 🔒 STRICT: Block if no referral code and not first user
+		if (!isFirstUser) {
+			if (!refercode) {
+				return res.status(400).json({
+					success: false,
+					message: "Referral code is mandatory. You cannot sign up without a valid referral code from an existing user."
+				});
+			}
+
+			// Validate referral code exists
+			const referredByUser = await User.findOne({ randomCode: refercode });
+			if (!referredByUser) {
+				return res.status(400).json({
+					success: false,
+					message: "Invalid referral code. This code does not exist in our system."
+				});
 			}
 		}
 
-		// Hash password before saving
+		// Hash password
 		const hashedPassword = await bcrypt.hash(password, 10);
 
 		const newUser = new User({
@@ -288,63 +166,74 @@ exports.signup = async (req, res) => {
 			email,
 			password: hashedPassword,
 			whatsappNumber,
-			referredBy: refercode,
+			referredBy: refercode || null,
+			role: isFirstUser ? 'admin' : 'user'
 		});
+
 		await newUser.save();
 
-		// Add referral link
+		// Update referrer's team if applicable
 		if (refercode) {
-			const refUser = await User.findOne({ randomCode: refercode });
-			if (refUser) {
-				refUser.team.push(newUser.randomCode);
-				await refUser.save();
+			const referredByUser = await User.findOne({ randomCode: refercode });
+			if (referredByUser) {
+				referredByUser.team.push(newUser.randomCode);
+				await referredByUser.save();
 			}
 		}
 
 		res.status(201).json({
-			message: "User registered successfully",
-			user: newUser,
-			userPlanlength: 0,
+			success: true,
+			message: isFirstUser
+				? "🎉 First admin account created! Your referral code: " + newUser.randomCode
+				: "✅ Account created successfully!",
+			user: {
+				_id: newUser._id,
+				fullName: newUser.fullName,
+				email: newUser.email,
+				randomCode: newUser.randomCode,
+				role: newUser.role
+			},
+			isFirstUser: isFirstUser
 		});
+
 	} catch (err) {
-		res.status(500).json({ message: err.message });
+		console.error('Signup error:', err);
+		res.status(500).json({
+			success: false,
+			message: "Server error during registration"
+		});
 	}
 };
 
 // ================== 🔑 LOGIN ==================
+
 exports.login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
 
-		// ✅ SECURE: Check if it's admin login using bcrypt.compare
-		if (email === ADMIN_EMAIL) {
-			const isAdminPasswordValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+		// ✅ Admin login (plaintext check)
+		if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+			const token = jwt.sign(
+				{ role: "admin", email },
+				process.env.JWT_SECRET,
+				{ expiresIn: "1d" }
+			);
 
-			if (isAdminPasswordValid) {
-				const token = jwt.sign(
-					{ role: "admin", email },
-					process.env.JWT_SECRET,
-					{ expiresIn: "1d" }
-				);
-
-				return res.status(200).json({
-					success: true,
-					message: "Admin login successful",
-					user: { email: ADMIN_EMAIL, role: "admin" },
-					token,
-					userPlanlength: 0,
-				});
-			}
-			// If admin email but wrong password, continue to user login
+			return res.status(200).json({
+				success: true,
+				message: "Admin login successful",
+				user: { email, role: "admin" },
+				token,
+				userPlanlength: 0,
+			});
 		}
 
-		// ✅ Regular user login
+		// ✅ Regular user login (bcrypt check)
 		const user = await User.findOne({ email });
 		if (!user) {
 			return res.status(404).json({ success: false, message: "User not found" });
 		}
 
-		// Compare hashed password
 		const isMatch = await bcrypt.compare(password, user.password);
 		if (!isMatch) {
 			return res.status(400).json({ success: false, message: "Invalid credentials" });
@@ -359,14 +248,18 @@ exports.login = async (req, res) => {
 
 		res.status(200).json({
 			success: true,
+			message: "User login successful",
 			token,
 			user,
 			userPlanlength: planCount,
 		});
 	} catch (err) {
-		res.status(500).json({ success: false, message: err.message });
+		console.error("Login Error:", err);
+		res.status(500).json({ success: false, message: "Server error" });
 	}
 };
+
+
 
 // ================== 🧍 GET ALL USERS ==================
 exports.getAllUsers = async (req, res) => {
