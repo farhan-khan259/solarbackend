@@ -166,7 +166,7 @@ exports.signup = async (req, res) => {
 					message: "Invalid referral code. This code does not exist in our system."
 				});
 			}
-			
+
 			console.log(`✅ Referral code validated: ${refercode} belongs to ${referredByUser.fullName}`);
 		}
 
@@ -215,7 +215,7 @@ exports.signup = async (req, res) => {
 			{ expiresIn: "30d" }
 		);
 
-		const responseMessage = isFirstUser 
+		const responseMessage = isFirstUser
 			? `🎉 First admin account created successfully! Your referral code: ${newUser.randomCode}`
 			: `✅ Account created successfully! Your referral code: ${newUser.randomCode}`;
 
@@ -240,7 +240,7 @@ exports.signup = async (req, res) => {
 
 	} catch (err) {
 		console.error('❌ Signup error:', err);
-		
+
 		// Handle duplicate key errors
 		if (err.code === 11000) {
 			return res.status(400).json({
@@ -248,7 +248,7 @@ exports.signup = async (req, res) => {
 				message: "User with this email or referral code already exists"
 			});
 		}
-		
+
 		// Handle validation errors
 		if (err.name === 'ValidationError') {
 			const errors = Object.values(err.errors).map(val => val.message);
@@ -269,38 +269,97 @@ exports.signup = async (req, res) => {
 function generateRandomCode() {
 	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 	let result = '';
-	
+
 	// Generate 8-character code
 	for (let i = 0; i < 8; i++) {
 		result += characters.charAt(Math.floor(Math.random() * characters.length));
 	}
-	
+
 	// Ensure uniqueness (basic check)
 	console.log(`🔑 Generated code: ${result}`);
 	return result;
 }
 
-// ================== 🔑 LOGIN ==================
+// // ================== 🔑 LOGIN ==================
 
+// exports.login = async (req, res) => {
+// 	try {
+// 		const { email, password } = req.body;
+
+// 		// ✅ Admin login (plaintext check)
+// 		if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+// 			const token = jwt.sign(
+// 				{ role: "admin", email },
+// 				process.env.JWT_SECRET,
+// 				{ expiresIn: "1d" }
+// 			);
+
+// 			return res.status(200).json({
+// 				success: true,
+// 				message: "Admin login successful",
+// 				user: { email, role: "admin" },
+// 				token,
+// 				userPlanlength: 0,
+// 			});
+// 		}
+
+// 		// ✅ Regular user login (bcrypt check)
+// 		const user = await User.findOne({ email });
+// 		if (!user) {
+// 			return res.status(404).json({ success: false, message: "User not found" });
+// 		}
+
+// 		const isMatch = await bcrypt.compare(password, user.password);
+// 		if (!isMatch) {
+// 			return res.status(400).json({ success: false, message: "Invalid credentials" });
+// 		}
+
+// 		const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+// 			expiresIn: "1d",
+// 		});
+
+// 		const plans = await Plan.find({ user_id: user._id });
+// 		const planCount = plans.length || 0;
+
+// 		res.status(200).json({
+// 			success: true,
+// 			message: "User login successful",
+// 			token,
+// 			user,
+// 			userPlanlength: planCount,
+// 		});
+// 	} catch (err) {
+// 		console.error("Login Error:", err);
+// 		res.status(500).json({ success: false, message: "Server error" });
+// 	}
+// };
+
+
+// ================== 🔑 LOGIN ==================
 exports.login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
 
-		// ✅ Admin login (plaintext check)
-		if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-			const token = jwt.sign(
-				{ role: "admin", email },
-				process.env.JWT_SECRET,
-				{ expiresIn: "1d" }
-			);
+		// ✅ ADMIN LOGIN (using bcrypt)
+		if (email === process.env.ADMIN_EMAIL) {
+			const match = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
+			if (match) {
+				const token = jwt.sign(
+					{ role: "admin", email },
+					process.env.JWT_SECRET,
+					{ expiresIn: "1d" }
+				);
 
-			return res.status(200).json({
-				success: true,
-				message: "Admin login successful",
-				user: { email, role: "admin" },
-				token,
-				userPlanlength: 0,
-			});
+				return res.status(200).json({
+					success: true,
+					message: "Admin login successful",
+					user: { email, role: "admin" },
+					token,
+					userPlanlength: 0,
+				});
+			} else {
+				return res.status(400).json({ success: false, message: "Invalid admin credentials" });
+			}
 		}
 
 		// ✅ Regular user login (bcrypt check)
@@ -333,6 +392,7 @@ exports.login = async (req, res) => {
 		res.status(500).json({ success: false, message: "Server error" });
 	}
 };
+
 
 
 
