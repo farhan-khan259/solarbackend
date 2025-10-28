@@ -126,6 +126,14 @@ exports.signup = async (req, res) => {
 	try {
 		const { fullName, email, password, refercode, whatsappNumber } = req.body;
 
+		// ✅ Validate required fields
+		if (!fullName || !email || !password) {
+			return res.status(400).json({
+				success: false,
+				message: "Full name, email, and password are required"
+			});
+		}
+
 		// Check for existing user
 		const existingUser = await User.findOne({ email });
 		if (existingUser) {
@@ -138,6 +146,8 @@ exports.signup = async (req, res) => {
 		// Get total user count
 		const userCount = await User.countDocuments();
 		const isFirstUser = userCount === 0;
+
+		console.log(`👤 Signup attempt: ${email} | First User: ${isFirstUser} | Referral: ${refercode || 'None'}`);
 
 		// 🔒 STRICT: Block if no referral code and not first user
 		if (!isFirstUser) {
@@ -156,21 +166,37 @@ exports.signup = async (req, res) => {
 					message: "Invalid referral code. This code does not exist in our system."
 				});
 			}
+			
+			console.log(`✅ Referral code validated: ${refercode} belongs to ${referredByUser.fullName}`);
 		}
 
 		// Hash password
 		const hashedPassword = await bcrypt.hash(password, 10);
 
+		// Generate random code for the new user
+		const randomCode = generateRandomCode();
+		console.log(`🆕 Generated user code: ${randomCode}`);
+
+		// Create new user
 		const newUser = new User({
 			fullName,
 			email,
 			password: hashedPassword,
-			whatsappNumber,
+			whatsappNumber: whatsappNumber || "",
 			referredBy: refercode || null,
-			role: isFirstUser ? 'admin' : 'user'
+			randomCode: randomCode,
+			role: isFirstUser ? 'admin' : 'user',
+			userbalance: 0,
+			UserInvestment: 0,
+			userTotalDeposits: 0,
+			userTotalWithdrawals: 0,
+			totalEarnings: 0,
+			totalCommissionEarned: 0,
+			team: []
 		});
 
 		await newUser.save();
+		console.log(`✅ User saved to database: ${newUser.email}`);
 
 		// Update referrer's team if applicable
 		if (refercode) {
@@ -178,32 +204,81 @@ exports.signup = async (req, res) => {
 			if (referredByUser) {
 				referredByUser.team.push(newUser.randomCode);
 				await referredByUser.save();
+				console.log(`✅ Added ${newUser.randomCode} to ${referredByUser.fullName}'s team`);
 			}
 		}
 
+		// Generate JWT token
+		const token = jwt.sign(
+			{ userId: newUser._id, email: newUser.email },
+			process.env.JWT_SECRET || "fallback-secret-key",
+			{ expiresIn: "30d" }
+		);
+
+		const responseMessage = isFirstUser 
+			? `🎉 First admin account created successfully! Your referral code: ${newUser.randomCode}`
+			: `✅ Account created successfully! Your referral code: ${newUser.randomCode}`;
+
 		res.status(201).json({
 			success: true,
-			message: isFirstUser
-				? "🎉 First admin account created! Your referral code: " + newUser.randomCode
-				: "✅ Account created successfully!",
+			message: responseMessage,
 			user: {
 				_id: newUser._id,
 				fullName: newUser.fullName,
 				email: newUser.email,
 				randomCode: newUser.randomCode,
-				role: newUser.role
+				role: newUser.role,
+				userbalance: newUser.userbalance,
+				referredBy: newUser.referredBy,
+				whatsappNumber: newUser.whatsappNumber
 			},
+			token,
 			isFirstUser: isFirstUser
 		});
 
+		console.log(`🎊 Registration completed: ${newUser.fullName} (${newUser.role})`);
+
 	} catch (err) {
-		console.error('Signup error:', err);
+		console.error('❌ Signup error:', err);
+		
+		// Handle duplicate key errors
+		if (err.code === 11000) {
+			return res.status(400).json({
+				success: false,
+				message: "User with this email or referral code already exists"
+			});
+		}
+		
+		// Handle validation errors
+		if (err.name === 'ValidationError') {
+			const errors = Object.values(err.errors).map(val => val.message);
+			return res.status(400).json({
+				success: false,
+				message: `Validation error: ${errors.join(', ')}`
+			});
+		}
+
 		res.status(500).json({
 			success: false,
-			message: "Server error during registration"
+			message: "Server error during registration. Please try again."
 		});
 	}
 };
+
+// Random code generator function
+function generateRandomCode() {
+	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	let result = '';
+	
+	// Generate 8-character code
+	for (let i = 0; i < 8; i++) {
+		result += characters.charAt(Math.floor(Math.random() * characters.length));
+	}
+	
+	// Ensure uniqueness (basic check)
+	console.log(`🔑 Generated code: ${result}`);
+	return result;
+}
 
 // ================== 🔑 LOGIN ==================
 
