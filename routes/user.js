@@ -221,4 +221,36 @@ router.post("/admindeleteplainuser", async (req, res) => {
 	}
 });
 
+
+
+
+// Add this to your backend routes (in user routes or team routes)
+router.post("/getUserByReferral", async (req, res) => {
+	try {
+		const { referralCode } = req.body;
+
+		if (!referralCode) {
+			return res.status(400).json({ success: false, message: "Referral code is required" });
+		}
+
+		const user = await User.findOne({ randomCode: referralCode }).select("fullName email randomCode");
+
+		if (!user) {
+			return res.status(404).json({ success: false, message: "User not found" });
+		}
+
+		return res.status(200).json({
+			success: true,
+			user: {
+				fullName: user.fullName,
+				email: user.email,
+				randomCode: user.randomCode
+			}
+		});
+	} catch (error) {
+		console.error("Error fetching user by referral:", error);
+		return res.status(500).json({ success: false, message: "Server error" });
+	}
+});
+
 module.exports = router;
